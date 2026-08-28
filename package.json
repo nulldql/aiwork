@@ -1,0 +1,34 @@
+{
+  "name": "aiwork",
+  "version": "0.1.0",
+  "description": "Gives each AI coding agent its own git worktree, and flags it before two agents collide on the same files.",
+  "type": "module",
+  "bin": {
+    "aiwork": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "test": "npm run build && node --test dist/__tests__/*.test.js"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "git",
+    "worktree",
+    "developer-tools",
+    "cli"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "typescript": "^5.7.3"
+  }
+}
