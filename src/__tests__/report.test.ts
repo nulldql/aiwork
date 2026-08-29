@@ -10,6 +10,7 @@ function status(name: string, branch: string, touchedFiles: string[]): AgentStat
     hasUncommittedChanges: touchedFiles.length > 0,
     ahead: touchedFiles.length,
     behind: 0,
+    baseBranchMissing: false,
   };
 }
 
@@ -49,6 +50,20 @@ test("formatStatusReport prints an OVERLAP section with shared files and the ris
   assert.match(output, /OVERLAP/);
   assert.match(output, /src\/user\/UserService\.ts/);
   assert.match(output, /Potential conflict: HIGH/);
+});
+
+test("formatStatusReport clearly flags a missing base branch instead of a misleading ahead/behind count", () => {
+  const missingBaseStatus: AgentStatus = {
+    agent: { name: "agent-1", branch: "aiwork/agent-1", path: "/repo/.aiwork-worktrees/agent-1", base: "feature-base" },
+    touchedFiles: [],
+    hasUncommittedChanges: false,
+    ahead: 0,
+    behind: 0,
+    baseBranchMissing: true,
+  };
+  const output = formatStatusReport([missingBaseStatus], [], new Map());
+  assert.match(output, /base "feature-base" no longer exists, can't compare/);
+  assert.doesNotMatch(output, /ahead 0 \/ behind 0/);
 });
 
 test("formatStatusReport says there's no overlap when there isn't any", () => {

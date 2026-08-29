@@ -11,6 +11,7 @@ export type AgentStatus = {
   hasUncommittedChanges: boolean;
   ahead: number;
   behind: number;
+  baseBranchMissing: boolean;
 };
 
 export type RiskLevel = "none" | "medium" | "high";

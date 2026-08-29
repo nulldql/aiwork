@@ -47,6 +47,26 @@ test("two agents editing the same real file produce a high risk overlap", async 
   });
 });
 
+test("buildStatuses reports a missing base branch instead of a misleading clean status", async () => {
+  await withTempDir(async (dir) => {
+    await initRepoWithCommit(dir);
+    await git(dir, ["branch", "feature-base"]);
+
+    const agent = await startAgent(dir, "agent-1", "feature-base");
+    await writeFile(join(agent.path, "scratch.ts"), "export {}");
+
+    await git(dir, ["branch", "-D", "feature-base"]);
+
+    const statuses = await buildStatuses(dir);
+    assert.equal(statuses.length, 1);
+    assert.equal(statuses[0].baseBranchMissing, true);
+    assert.equal(statuses[0].ahead, 0);
+    assert.equal(statuses[0].behind, 0);
+    assert.equal(statuses[0].hasUncommittedChanges, true);
+    assert.deepEqual(statuses[0].touchedFiles, ["scratch.ts"]);
+  });
+});
+
 test("two agents working in unrelated files produce no overlap", async () => {
   await withTempDir(async (dir) => {
     await initRepoWithCommit(dir);

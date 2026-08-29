@@ -8,7 +8,7 @@ import {
   branchExists,
   mergeBranch,
 } from "./git.js";
-import { readState, writeState } from "./state.js";
+import { readState, writeState, withStateLock } from "./state.js";
 import type { Agent } from "./types.js";
 
 const BRANCH_PREFIX = "aiwork/";
@@ -75,9 +75,11 @@ export async function startAgent(cwd: string, name: string, base?: string, task?
   const worktreePath = worktreePathFor(root, name);
   await addWorktree(root, worktreePath, branch, resolvedBase);
 
-  const state = await readState(statePathFor(root));
-  state[name] = { base: resolvedBase, task };
-  await writeState(statePathFor(root), state);
+  await withStateLock(statePathFor(root), async () => {
+    const state = await readState(statePathFor(root));
+    state[name] = { base: resolvedBase, task };
+    await writeState(statePathFor(root), state);
+  });
 
   return { name, path: worktreePath, branch, base: resolvedBase };
 }
@@ -89,9 +91,11 @@ export async function stopAgent(cwd: string, name: string, force: boolean): Prom
 
   await removeWorktree(root, agent.path, force);
 
-  const state = await readState(statePathFor(root));
-  delete state[name];
-  await writeState(statePathFor(root), state);
+  await withStateLock(statePathFor(root), async () => {
+    const state = await readState(statePathFor(root));
+    delete state[name];
+    await writeState(statePathFor(root), state);
+  });
 }
 
 export async function mergeAgent(cwd: string, name: string): Promise<string> {

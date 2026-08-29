@@ -20,7 +20,13 @@ export function formatStatusReport(
       lines.push("No changes yet");
     }
     const dirtyNote = status.hasUncommittedChanges ? "  (uncommitted changes)" : "";
-    lines.push(`branch: ${status.agent.branch}  ahead ${status.ahead} / behind ${status.behind}${dirtyNote}`);
+    if (status.baseBranchMissing) {
+      lines.push(
+        `branch: ${status.agent.branch}  base "${status.agent.base}" no longer exists, can't compare${dirtyNote}`,
+      );
+    } else {
+      lines.push(`branch: ${status.agent.branch}  ahead ${status.ahead} / behind ${status.behind}${dirtyNote}`);
+    }
     lines.push("");
   });
 
@@ -59,6 +65,7 @@ export function toJson(statuses: AgentStatus[], overlaps: Overlap[], tasks: Map<
       hasUncommittedChanges: status.hasUncommittedChanges,
       ahead: status.ahead,
       behind: status.behind,
+      baseBranchMissing: status.baseBranchMissing,
     })),
     overlaps,
   };
