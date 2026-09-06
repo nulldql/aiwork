@@ -1,5 +1,6 @@
-import { readFile, writeFile, mkdir, open, unlink, stat } from "fs/promises";
-import { dirname } from "path";
+import { readFile, writeFile, mkdir, open, unlink, stat, rename } from "fs/promises";
+import { dirname, join } from "path";
+import { randomBytes } from "crypto";
 
 export type AgentState = Record<string, { base: string; task?: string }>;
 
@@ -14,8 +15,11 @@ export async function readState(statePath: string): Promise<AgentState> {
 }
 
 export async function writeState(statePath: string, state: AgentState): Promise<void> {
-  await mkdir(dirname(statePath), { recursive: true });
-  await writeFile(statePath, JSON.stringify(state, null, 2));
+  const dir = dirname(statePath);
+  await mkdir(dir, { recursive: true });
+  const tmpPath = join(dir, `.aiwork-state.${randomBytes(6).toString("hex")}.tmp`);
+  await writeFile(tmpPath, JSON.stringify(state, null, 2));
+  await rename(tmpPath, statePath);
 }
 
 const LOCK_STALE_MS = 10_000;

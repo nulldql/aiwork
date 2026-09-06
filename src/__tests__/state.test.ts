@@ -41,6 +41,40 @@ test("withStateLock serializes concurrent read-modify-write cycles instead of lo
   });
 });
 
+test("readState never observes a torn or empty write while writeState is hammered concurrently", async () => {
+  await withTempDir(async (dir) => {
+    const statePath = join(dir, "state.json");
+    const bigState: Record<string, { base: string; task?: string }> = {};
+    for (let i = 0; i < 200; i++) bigState[`agent-${i}`] = { base: "main", task: `task number ${i} with some extra length` };
+    await writeState(statePath, bigState);
+
+    let stopped = false;
+    let reads = 0;
+
+    async function hammerWriter(): Promise<void> {
+      while (!stopped) {
+        await writeState(statePath, bigState);
+        await writeState(statePath, {});
+      }
+    }
+
+    async function hammerReader(): Promise<void> {
+      try {
+        for (let i = 0; i < 500 && !stopped; i++) {
+          const state = await readState(statePath);
+          assert.ok(typeof state === "object" && state !== null);
+          reads++;
+        }
+      } finally {
+        stopped = true;
+      }
+    }
+
+    await Promise.all([hammerWriter(), hammerWriter(), hammerReader(), hammerReader()]);
+    assert.ok(reads > 0);
+  });
+});
+
 test("withStateLock releases the lock even if the callback throws", async () => {
   await withTempDir(async (dir) => {
     const statePath = join(dir, "state.json");
